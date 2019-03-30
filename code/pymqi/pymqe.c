@@ -968,7 +968,7 @@ Calls the MQI's MQCRTMH function \
 
 static PyObject* pymqe_MQCRTMH(PyObject *self, PyObject *args) {
 
-  long conn_handle;
+  MQHCONN conn_handle;
 
   char *cmho_buffer;
   Py_ssize_t cmho_buffer_length = 0;
@@ -997,7 +997,7 @@ static PyObject* pymqe_MQCRTMH(PyObject *self, PyObject *args) {
   MQCRTMH(conn_handle, cmho, &msg_handle, &comp_code, &comp_reason);
   Py_END_ALLOW_THREADS
 
-  rv = Py_BuildValue("(lll)", (long)comp_code, (long)comp_reason, (long)msg_handle);
+  rv = Py_BuildValue("(llL)", (long)comp_code, (long)comp_reason, msg_handle);
 
   return rv;
 }
@@ -1010,7 +1010,8 @@ Calls the MQI's MQSETMP function \
 
 static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 
-  long conn_handle, msg_handle;
+  MQHCONN conn_handle;
+  MQHMSG msg_handle;
 
   char *smpo_buffer;
   Py_ssize_t smpo_buffer_length = 0;
@@ -1036,7 +1037,7 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 #if PY_MAJOR_VERSION==2
   if (!PyArg_ParseTuple(args, "lls#s#s#lsl", &conn_handle, &msg_handle, &smpo_buffer,
 #else
-  if (!PyArg_ParseTuple(args, "lly#y#y#lyl", &conn_handle, &msg_handle, &smpo_buffer,
+  if (!PyArg_ParseTuple(args, "lLy#y#y#lyl", &conn_handle, &msg_handle, &smpo_buffer,
 #endif
                         &smpo_buffer_length,
                         &property_name, &property_name_length,
@@ -1077,7 +1078,8 @@ Calls the MQI's MQINQMP function \
 
 static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
 
-  long conn_handle, msg_handle;
+  MQHCONN conn_handle;
+  MQHMSG msg_handle;
   long impo_options, pd_options;
 
   MQCHARV name = {MQCHARV_DEFAULT};
@@ -1098,7 +1100,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
 #if PY_MAJOR_VERSION==2
   if (!PyArg_ParseTuple(args, "llls#lll", &conn_handle, &msg_handle, &impo_options,
 #else
-  if (!PyArg_ParseTuple(args, "llly#lll", &conn_handle, &msg_handle, &impo_options,
+  if (!PyArg_ParseTuple(args, "lLly#lll", &conn_handle, &msg_handle, &impo_options,
 #endif
                         &property_name, &property_name_length, &pd_options,
                         &property_type, &max_value_length)) {
