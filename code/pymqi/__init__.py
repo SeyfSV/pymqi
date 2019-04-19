@@ -1266,13 +1266,16 @@ class MQMIError(Error):
     """Exception class for MQI low level errors."""
     errStringDicts = (_MQConst2String(CMQC, "MQRC_"), _MQConst2String(CMQCFC, "MQRCCF_"),)
 
-    def __init__(self, comp, reason):
+    def __init__(self, comp, reason, **kw):
         """MQMIError(comp, reason)
 
         Construct the error object with MQI completion code 'comp' and
         reason code 'reason'."""
 
         self.comp, self.reason = comp, reason
+        
+        for key in kw:
+            setattr(self, key, kw[key])
 
     def __str__(self):
         """__str__()
@@ -2350,12 +2353,12 @@ class MessageHandle(object):
             if not max_value_length:
                 max_value_length = MessageHandle.default_value_length
 
-            comp_code, comp_reason, value = pymqe.MQINQMP(self.conn_handle,
+            comp_code, comp_reason, value, dataLength = pymqe.MQINQMP(self.conn_handle,
                                                           self.msg_handle, impo_options, name, impo_options,
                                                           property_type, max_value_length)
 
             if comp_code != CMQC.MQCC_OK:
-                raise MQMIError(comp_code, comp_reason)
+                raise MQMIError(comp_code, comp_reason, value=value, dataLength=dataLength)
 
             return value
 

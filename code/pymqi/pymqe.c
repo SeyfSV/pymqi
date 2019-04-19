@@ -1080,7 +1080,9 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
 
   MQHCONN conn_handle;
   MQHMSG msg_handle;
-  long impo_options, pd_options;
+
+
+  MQLONG impo_options, pd_options;
 
   MQCHARV name = {MQCHARV_DEFAULT};
   char *property_name;
@@ -1093,7 +1095,6 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
   MQLONG comp_code = MQCC_UNKNOWN, comp_reason = MQRC_NONE;
   PyObject *rv;
 
-  MQBYTE *value;
   MQIMPO impo = {MQIMPO_DEFAULT};
   MQPD pd = {MQPD_DEFAULT};
 
@@ -1107,7 +1108,8 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
     return NULL;
   }
 
-  value = malloc(max_value_length * sizeof(MQBYTE));
+  PMQBYTE value = NULL;
+  value = (PMQBYTE)malloc(max_value_length);
 
   impo.Options = impo_options;
   pd.Options = pd_options;
@@ -1115,12 +1117,17 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
   name.VSPtr = property_name;
   name.VSLength = property_name_length;
 
-  MQINQMP(conn_handle, msg_handle, &impo, &name, &pd, &property_type, sizeof(value),
+  MQINQMP(conn_handle, msg_handle, &impo, &name, &pd, &property_type, max_value_length,
     value, &actual_value_length, &comp_code, &comp_reason);
+
+  if (max_value_length > actual_value_length){
+    value = realloc(value, actual_value_length);
+  };
+  
 #if PY_MAJOR_VERSION==2
-  rv = Py_BuildValue("(lls)", (long)comp_code, (long)comp_reason, (char *)value);
+  rv = Py_BuildValue("(llsl)", (long)comp_code, (long)comp_reason, (char *)value), (long) actual_value_length;
 #else
-  rv = Py_BuildValue("(lly)", (long)comp_code, (long)comp_reason, (char *)value);
+  rv = Py_BuildValue("(llyl)", (long)comp_code, (long)comp_reason, (MQBYTE *)value, (long) actual_value_length);
 #endif
   free(value);
 
