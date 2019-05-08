@@ -1123,7 +1123,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
   if (max_value_length > actual_value_length){
     value = realloc(value, actual_value_length);
   };
-  
+
 #if PY_MAJOR_VERSION==2
   rv = Py_BuildValue("(llsl)", (long)comp_code, (long)comp_reason, (char *)value), (long) actual_value_length;
 #else
@@ -1385,7 +1385,22 @@ static PyObject *pymqe_mqaiExecute(PyObject *self, PyObject *args) {
                    else if (Py23Bytes_Check(value)) {
                        strArg = Py23Bytes_AsString(value);
                        mqAddString(adminBag, paramType, MQBL_NULL_TERMINATED, strArg, &compCode, &compReason);
-                  } else {
+                  }
+                  /*
+                   * If value is a list than suppose that it is MQIACF_Q_ATTRS key
+                   */
+                  else if (PyList_Check(value)){
+                    int nValuesCount = (int)PyList_Size(value);
+                    int nValueIdx;
+                    PyObject *nValue;
+                    for (nValueIdx = 0; nValueIdx < nValuesCount; nValueIdx++){
+                      nValue = PyList_GetItem(value, nValueIdx);
+                      if (PyLong_Check(nValue)){
+                        mqAddInquiry(adminBag, (MQLONG)PyLong_AsLong(nValue), &compCode, &compReason);
+                      }
+                    }
+                  }
+                  else {
                       isByteString = PyObject_HasAttrString(value, "pymqi_byte_string");
                       if(1 == isByteString) {
                         /* value is a ByteString.  have to use its "value" attribute */
