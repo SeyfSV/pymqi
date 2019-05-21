@@ -35,7 +35,7 @@ class TestMP(unittest.TestCase):
         """
         if self.queue_name:
             self.delete_queue(self.queue_name)
-        self.qmgr.disconnect()        
+        self.qmgr.disconnect()
 
     def create_queue(self, queue_name):
         queue_type = pymqi.CMQC.MQQT_LOCAL
@@ -43,30 +43,30 @@ class TestMP(unittest.TestCase):
 
         args = {pymqi.CMQC.MQCA_Q_NAME: utils.py3str2bytes(queue_name),
                 pymqi.CMQC.MQIA_Q_TYPE: queue_type,
-                pymqi.CMQC.MQIA_MAX_Q_DEPTH: max_depth, 
+                pymqi.CMQC.MQIA_MAX_Q_DEPTH: max_depth,
                 pymqi.CMQCFC.MQIACF_REPLACE: pymqi.CMQCFC.MQRP_YES}
         pcf = pymqi.PCFExecute(self.qmgr)
         pcf.MQCMD_CREATE_Q(args)
         pcf.disconnect
 
     def delete_queue(self, queue_name):
-        
+
         pcf = pymqi.PCFExecute(self.qmgr)
         args = {pymqi.CMQC.MQCA_Q_NAME: utils.py3str2bytes(queue_name),
                 pymqi.CMQCFC.MQIACF_PURGE: pymqi.CMQCFC.MQPO_YES}
         pcf.MQCMD_DELETE_Q(args)
-    
+
     def workWithProp(self):
         messageHandle_get = None
         try:
             cmho_put = pymqi.CMHO()
             messageHandle_put = pymqi.MessageHandle(self.qmgr, cmho_put)
             messageHandle_put.properties.set(self.msg_prop_name, self.msg_prop_value)
-            
-            pmo = pymqi.PMO()
+
+            pmo = pymqi.PMO(Version=pymqi.CMQC.MQPMO_CURRENT_VERSION)
             pmo.OriginalMsgHandle = messageHandle_put.msg_handle
 
-            md_put = pymqi.MD()
+            md_put = pymqi.MD(Version=pymqi.CMQC.MQMD_CURRENT_VERSION)
 
             queue_put = pymqi.Queue(self.qmgr, self.queue_name, pymqi.CMQC.MQOO_OUTPUT)
             queue_put.put(b'', md_put, pmo)
@@ -74,11 +74,11 @@ class TestMP(unittest.TestCase):
             queue_put.close()
 
 
-            gmo = pymqi.GMO()
-            gmo.Options = pymqi.CMQC.MQGMO_NO_WAIT | pymqi.CMQC.MQGMO_PROPERTIES_IN_HANDLE 
+            gmo = pymqi.GMO(Version=pymqi.CMQC.MQGMO_CURRENT_VERSION)
+            gmo.Options = pymqi.CMQC.MQGMO_NO_WAIT | pymqi.CMQC.MQGMO_PROPERTIES_IN_HANDLE
             gmo.MatchOptions = pymqi.CMQC.MQMO_MATCH_MSG_ID
 
-            cmho_get = pymqi.CMHO()
+            cmho_get = pymqi.CMHO(Version=pymqi.CMQC.MQCMHO_CURRENT_VERSION)
             messageHandle_get = pymqi.MessageHandle(self.qmgr, cmho_get)
             gmo.MsgHandle = messageHandle_get.msg_handle
             md_get = pymqi.MD()
@@ -90,12 +90,12 @@ class TestMP(unittest.TestCase):
             if queue_put:
                 if queue_put.get_handle():
                     queue_put.close()
-            
+
             if queue_get:
                 if queue_get.get_handle():
                     queue_get.close()
 
-        return messageHandle_get        
+        return messageHandle_get
 
 ############################################################################
 #
@@ -115,7 +115,7 @@ class TestMP(unittest.TestCase):
         messageHandle_get = self.workWithProp()
 
         value = messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value))
-        
+
         self.assertEqual(self.msg_prop_value, value)
 
 if __name__ == "__main__":
