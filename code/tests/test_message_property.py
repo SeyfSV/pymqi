@@ -12,7 +12,8 @@ class TestMP(unittest.TestCase):
     def setUp(self):
 
         self.msg_prop_name = utils.py3str2bytes("test_name")
-        self.msg_prop_value = utils.py3str2bytes("test_valuetest_valuetest_valuetest_valuetest_value")
+        self.msg_prop_value_bytes = utils.py3str2bytes("test_valuetest_valuetest_valuetest_valuetest_value")
+        self.msg_prop_value = "test_valuetest_valuetest_valuetest_valuetest_value"
 
         # max length of queue names is 48 characters
         self.queue_name = "{prefix}.MSG.PROP.QUEUE".format(prefix=config.MQ.QUEUE.PREFIX)
@@ -58,10 +59,12 @@ class TestMP(unittest.TestCase):
 
     def workWithProp(self):
         messageHandle_get = None
+        queue_get = None
+        queue_put = None
         try:
             cmho_put = pymqi.CMHO()
             messageHandle_put = pymqi.MessageHandle(self.qmgr, cmho_put)
-            messageHandle_put.properties.set(self.msg_prop_name, self.msg_prop_value)
+            messageHandle_put.properties.set(self.msg_prop_name, self.msg_prop_value, value_length=len(self.msg_prop_value))
 
             pmo = pymqi.PMO(Version=pymqi.CMQC.MQPMO_CURRENT_VERSION)
             pmo.OriginalMsgHandle = messageHandle_put.msg_handle

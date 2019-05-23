@@ -2353,7 +2353,7 @@ class MessageHandle(object):
             if not max_value_length:
                 max_value_length = MessageHandle.default_value_length
 
-            comp_code, comp_reason, value, dataLength = pymqe.MQINQMP(self.conn_handle,
+            value, dataLength, comp_code, comp_reason  = pymqe.MQINQMP(self.conn_handle,
                                                           self.msg_handle, impo_options, name, impo_options,
                                                           property_type, max_value_length)
 
