@@ -1,5 +1,7 @@
 .idea
 .idea/*
+.vscode
+.vscode/*
 code/build/*
 code/dist
 code/develop-eggs/*
