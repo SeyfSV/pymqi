@@ -12,8 +12,11 @@ class TestMP(unittest.TestCase):
     def setUp(self):
 
         self.msg_prop_name = utils.py3str2bytes("test_name")
-        self.msg_prop_value_bytes = utils.py3str2bytes("test_valuetest_valuetest_valuetest_valuetest_value")
-        self.msg_prop_value = "test_valuetest_valuetest_valuetest_valuetest_value"
+        self.msg_prop_value_str = "test_valuetest_valuetest_valuetest_valuetest_value"
+        self.msg_prop_value_bytes = b"test_valuetest_valuetest_valuetest_valuetest_value"
+        self.msg_prop_value_bool = True
+
+
 
         # max length of queue names is 48 characters
         self.queue_name = "{prefix}.MSG.PROP.QUEUE".format(prefix=config.MQ.QUEUE.PREFIX)
@@ -57,14 +60,24 @@ class TestMP(unittest.TestCase):
                 pymqi.CMQCFC.MQIACF_PURGE: pymqi.CMQCFC.MQPO_YES}
         pcf.MQCMD_DELETE_Q(args)
 
-    def workWithProp(self):
+    def workWithProp(self, property_value, property_type):
         messageHandle_get = None
         queue_get = None
         queue_put = None
         try:
+            value_length = pymqi.CMQC.MQTYPE_NULL
+            if property_type == pymqi.CMQC.MQTYPE_BOOLEAN:
+                value_length = 4
+            elif property_type == pymqi.CMQC.MQTYPE_BYTE_STRING:
+                value_length=len(property_value)
+            elif property_type == pymqi.CMQC.MQTYPE_STRING:
+                value_length=len(property_value)
+
             cmho_put = pymqi.CMHO()
             messageHandle_put = pymqi.MessageHandle(self.qmgr, cmho_put)
-            messageHandle_put.properties.set(self.msg_prop_name, self.msg_prop_value, value_length=len(self.msg_prop_value))
+            messageHandle_put.properties.set(self.msg_prop_name, property_value,
+                                            value_length=value_length,
+                                            property_type=property_type)
 
             pmo = pymqi.PMO(Version=pymqi.CMQC.MQPMO_CURRENT_VERSION)
             pmo.OriginalMsgHandle = messageHandle_put.msg_handle
@@ -107,19 +120,34 @@ class TestMP(unittest.TestCase):
 ############################################################################
 
     def test_message_properties_short(self):
-        messageHandle_get = self.workWithProp()
+        messageHandle_get = self.workWithProp(self.msg_prop_value_bytes, pymqi.CMQC.MQTYPE_BYTE_STRING)
 
         try:
-            messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value)//2)
+            messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value_bytes)//2)
         except pymqi.MQMIError as e:
             self.assertEqual(e.reason, pymqi.CMQC.MQRC_PROPERTY_VALUE_TOO_BIG, e)
 
-    def test_message_properties_full(self):
-        messageHandle_get = self.workWithProp()
+    def test_message_properties_byte(self):
+        messageHandle_get = self.workWithProp(self.msg_prop_value_bytes, pymqi.CMQC.MQTYPE_BYTE_STRING)
 
-        value = messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value))
+        value = messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value_bytes))
 
-        self.assertEqual(self.msg_prop_value, value)
+        self.assertEqual(self.msg_prop_value_bytes, value)
+
+    def test_message_properties_str(self):
+        messageHandle_get = self.workWithProp(self.msg_prop_value_str, pymqi.CMQC.MQTYPE_STRING)
+
+        value = messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value_str))
+
+        self.assertEqual(self.msg_prop_value_str, value)
+
+    def test_message_properties_bool(self):
+        messageHandle_get = self.workWithProp(self.msg_prop_value_bool, pymqi.CMQC.MQTYPE_BOOLEAN)
+
+        value = messageHandle_get.properties.get(self.msg_prop_name, max_value_length=len(self.msg_prop_value_str))
+
+        self.assertEqual(self.msg_prop_value_bool, value)
+
 
 if __name__ == "__main__":
     unittest.main()

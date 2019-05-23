@@ -1273,7 +1273,7 @@ class MQMIError(Error):
         reason code 'reason'."""
 
         self.comp, self.reason = comp, reason
-        
+
         for key in kw:
             setattr(self, key, kw[key])
 
@@ -2373,7 +2373,7 @@ class MessageHandle(object):
             """
 
             name = py3str2bytes(name)  # Python 3 strings to be converted to bytes
-            check_not_py3str(value)  # Python 3 only bytes allowed
+            #check_not_py3str(value)  # Python 3 only bytes allowed
 
             pd = pd if pd else PD()
             smpo = smpo if smpo else SMPO()

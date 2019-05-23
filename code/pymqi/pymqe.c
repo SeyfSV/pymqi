@@ -1043,14 +1043,15 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   long property_type;
 
   //const char *property_value;
-  Py_UNICODE *property_value;
-  long value_length;
+  PMQBYTE property_value = NULL;
+  //void *property_value = NULL;
+  Py_ssize_t value_length = 0;
 
   MQLONG comp_code = MQCC_UNKNOWN, comp_reason = MQRC_NONE;
   PyObject *rv;
   PyObject *property_value_object;
 
-  if (!PyArg_ParseTuple(args, "lLy#y#y#lSl",
+  if (!PyArg_ParseTuple(args, "lLy#y#y#lOl",
                               &conn_handle, &msg_handle,
                               &smpo_buffer, &smpo_buffer_length,
                               &property_name, &property_name_length,
@@ -1062,36 +1063,22 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   switch(property_type){
     /* Boolean value */
     case MQTYPE_BOOLEAN:
-/*      rv = Py_BuildValue("(illl)",
-            (PMQBOOL)value,
-            (long)actual_value_length,
-            (long)comp_code, (long)comp_reason);*/
+      property_value = (PMQBYTE)malloc(sizeof(MQBOOL));
+      *property_value = PyFloat_AsDouble(property_value_object);
       break;
 
     /* Byte-string value */
     case MQTYPE_BYTE_STRING:
-/*      rv = Py_BuildValue("(y#lll)",
-            (PMQBYTE)value, (long)return_length,
-            (long)actual_value_length,
-            (long)comp_code, (long)comp_reason);
-*/
-       break;
+      property_value = (PMQBYTE)PyBytes_AsString(property_value_object);
+      break;
 
     /* String value */
     case MQTYPE_STRING:
-/*      rv = Py_BuildValue("(s#lll)",
-            (PMQCHAR)value, (long)return_length,
-            (long)actual_value_length,
-            (long)comp_code, (long)comp_reason
-          );
-      
-*/    
-      property_value = PyUnicode_AS_UNICODE(property_value_object);
-/*      if (!PyArg_ParseTuple((property_value_object), "u", &property_value)){
-        return NULL;
-      };
-*/
-
+      #if PY_MAJOR_VERSION >= 3
+        property_value = (PMQBYTE)PyUnicode_AsUTF8(property_value_object);
+      #else
+        property_value = (PMQBYTE)PyString_AsString(property_value_object);
+      #endif
       break;
   }
 /*
@@ -1123,8 +1110,10 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 
   Py_BEGIN_ALLOW_THREADS
   MQSETMP(conn_handle, msg_handle, smpo, &name, pd, property_type, value_length,
-            (MQBYTE *)property_value, &comp_code, &comp_reason);
+            (PMQBYTE)property_value, &comp_code, &comp_reason);
   Py_END_ALLOW_THREADS
+
+  free(property_value);
 
   rv = Py_BuildValue("(ll)", (long)comp_code, (long)comp_reason);
   return rv;
@@ -1180,18 +1169,20 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
 
   MQINQMP(conn_handle, msg_handle, &impo, &name, &pd, &property_type, max_value_length,
     value, &actual_value_length, &comp_code, &comp_reason);
-  
+
   MQLONG return_length;
   if (max_value_length > actual_value_length)
     return_length = actual_value_length;
   else
     return_length = max_value_length;
-  
+
+
+
   switch(property_type){
     /* Boolean value */
     case MQTYPE_BOOLEAN:
       rv = Py_BuildValue("(illl)",
-            (PMQBOOL)value,
+            *value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason);
       break;
@@ -1212,7 +1203,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (long)comp_code, (long)comp_reason
           );
 
-      break;         
+      break;
 
     /* 32-bit floating-point number value */
     case MQTYPE_FLOAT32:
@@ -1220,7 +1211,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (PMQFLOAT32)value,
             (long) actual_value_length,
             (long)comp_code, (long)comp_reason);
-      break;      
+      break;
 
     /* 64-bit floating-point number value */
     case MQTYPE_FLOAT64:
@@ -1228,7 +1219,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (PMQFLOAT64)value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
-          );      
+          );
       break;
 
     /* 8-bit integer value */
@@ -1237,16 +1228,16 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (PMQINT8)value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
-          );            
+          );
       break;
 
     /* 16-bit integer value */
     case MQTYPE_INT16:
       rv = Py_BuildValue("(illl)",
-            (PMQINT16)value,
+            *value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
-          );            
+          );
       break;
 
     /* 32-bit integer value */
@@ -1255,7 +1246,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (PMQINT32)value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
-          );      
+          );
       break;
 
     /* 64-bit integer value */
@@ -1264,14 +1255,14 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
             (PMQINT64)value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
-          );      
+          );
       break;
     default:
       rv = NULL;
       break;
-  }  
+  }
 
-  free(value);
+  //free(value);
 
   return rv;
 }
