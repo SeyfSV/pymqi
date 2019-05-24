@@ -1043,8 +1043,7 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   long property_type;
 
   //const char *property_value;
-  //PMQBYTE property_value = NULL;
-  void *property_value = NULL;
+  PMQBYTE property_value = NULL;
   Py_ssize_t value_length = 0;
 
   MQLONG comp_code = MQCC_UNKNOWN, comp_reason = MQRC_NONE;
@@ -1061,6 +1060,9 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   }
 
   Py_ssize_t property_value_free = 0;
+
+  MQINT32 value32 = 0;
+  void * pvalue = NULL;
 
   switch(property_type){
     /* Boolean value */
@@ -1091,9 +1093,10 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 
     /* 16-bit integer value */
     case MQTYPE_INT16:
-      property_value = (PMQBYTE)malloc(sizeof(long));
+      property_value = malloc(sizeof(long));
       property_value_free = 1;
-      *property_value = (MQINT16)PyLong_AsLong(property_value_object);
+      *property_value = PyLong_AsLong(property_value_object);
+      value_length = sizeof(*property_value);
 /*      rv = Py_BuildValue("(illl)",
             *value,
             (long)actual_value_length,
@@ -1102,16 +1105,17 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
       break;
 
     /* 32-bit integer value */
-    case MQTYPE_INT32:
-      property_value = (PMQBYTE)malloc(sizeof(long long));
-      property_value_free = 1;
-      *property_value = PyLong_AsLongLong(property_value_object);
+    case MQTYPE_INT32:{
+      value32 = PyLong_AsLongLong(property_value_object);
+
+      pvalue = &value32;
 /*      rv = Py_BuildValue("(llll)",
             (PMQINT32)value,
             (long)actual_value_length,
             (long)comp_code, (long)comp_reason
           );*/
       break;
+    }
 
     /* 64-bit integer value */
     case MQTYPE_INT64:
@@ -1182,9 +1186,12 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   name.VSPtr = property_name;
   name.VSLength = property_name_length;
 
+  value32 = -5;
+  MQINT64 test = 3;
+
   Py_BEGIN_ALLOW_THREADS
-  MQSETMP(conn_handle, msg_handle, smpo, &name, pd, property_type, value_length,
-            property_value, &comp_code, &comp_reason);
+  MQSETMP(conn_handle, msg_handle, smpo, &name, pd, MQTYPE_INT64, 8,
+            &test, &comp_code, &comp_reason);
   Py_END_ALLOW_THREADS
 
   if (property_value_free){
