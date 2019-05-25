@@ -580,21 +580,14 @@ static PyObject *mqputN(int put1Flag, PyObject *self, PyObject *args) {
     Py_END_ALLOW_THREADS
   }
 
-Py_ssize_t test = PYMQI_MQPMO_SIZEOF;
-
 #if PY_MAJOR_VERSION==2
   rv = Py_BuildValue("(s#s#ll)", mDescP, PYMQI_MQMD_SIZEOF,
 #else
   rv = Py_BuildValue("(y#y#ll)", mDescP,
-                           //sizeof(*mDescP),
-                           //mDescBufferLength,
                            PYMQI_MQMD_SIZEOF,
 #endif
                pmoP,
-               //sizeof(*pmoP),
-               //putOptsBufferLength,
-               //PYMQI_MQPMO_SIZEOF,
-               test,
+               PYMQI_MQPMO_SIZEOF,
                (long) compCode, (long) compReason);
   return rv;
 }
@@ -1024,10 +1017,10 @@ Calls the MQI's MQSETMP function \
 
 static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 
-  MQLONG comp_code = MQCC_UNKNOWN, comp_reason = MQRC_NONE;
+
 
   MQHCONN conn_handle;
-  MQHMSG msg_handle = MQHM_UNUSABLE_HMSG;
+  MQHMSG msg_handle ;
 
   MQSMPO *smpo;
   char *smpo_buffer;
@@ -1037,11 +1030,15 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
   char *pd_buffer;
   Py_ssize_t pd_buffer_length = 0;
 
+
   MQCHARV name = {MQCHARV_DEFAULT};
   char *property_name;
   Py_ssize_t property_name_length = 0;
 
   MQLONG property_type;
+
+  MQLONG comp_code = MQCC_UNKNOWN;
+  MQLONG comp_reason = MQRC_NONE;
 
   void *value = NULL;
   Py_ssize_t value_length = 0;
@@ -1052,7 +1049,7 @@ static PyObject* pymqe_MQSETMP(PyObject *self, PyObject *args) {
 #if PY_MAJOR_VERSION==2
   if (!PyArg_ParseTuple(args, "lls#s#s#lOl", &conn_handle, &msg_handle, &smpo_buffer, 
 #else
-  if (!PyArg_ParseTuple(args, "lly#y#y#lOl", &conn_handle, &msg_handle, &smpo_buffer, 
+  if (!PyArg_ParseTuple(args, "lLy#y#y#lOl", &conn_handle, &msg_handle, &smpo_buffer, 
 #endif
                               &smpo_buffer_length,
                               &property_name, &property_name_length,
@@ -1220,7 +1217,7 @@ static PyObject* pymqe_MQINQMP(PyObject *self, PyObject *args) {
   void *value = NULL;
   value = (PMQBYTE)malloc(value_length);
 
-  MQINQMP(conn_handle, msg_handle, &impo, &name, &pd, &property_type, value_length,
+  MQINQMP(conn_handle, msg_handle, impo, &name, pd, &property_type, value_length,
     value, &data_length, &comp_code, &comp_reason);
 
   MQLONG return_length;

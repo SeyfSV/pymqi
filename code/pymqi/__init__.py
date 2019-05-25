@@ -237,8 +237,13 @@ class MQOpts(object):
         # the struct.pack/unpack format string. The attribute name is
         # identical to the 'C' structure member name.
         for i in memlist:
-            setattr(self, i[0], i[1])
-            self.__format = self.__format + i[2]
+            if i[2] == 'list':
+                mem = MQOpts(i[1])
+                setattr(self, i[0], mem)
+                self.__format += mem.__format
+            else:
+                setattr(self, i[0], i[1])
+                self.__format = self.__format + i[2]
         self.set(**kw)
 
     def pack(self):
@@ -250,6 +255,19 @@ class MQOpts(object):
 
         # Build tuple for struct.pack() argument. Start with format string.
         args = [self.__format]
+
+        args.extend(self._pack())
+
+        return struct.pack(*args)
+
+    def _pack(self):
+        """ _pack()
+
+        Prepare attributes for pack function.
+        Return arguments as a list"""
+
+        args = []
+
         # Now add the current attribute values to the tuple
         for i in self.__list:
             v = getattr(self, i[0])
@@ -258,11 +276,14 @@ class MQOpts(object):
                 for x in v:
                     check_not_py3str(x)  # Python 3 bytes check
                     args.append(x)
+            elif isinstance(v, MQOpts):
+                v._pack()
+                args.extend(v._pack())
             else:
                 check_not_py3str(v)  # Python 3 bytes check
                 args.append(v)
-
-        return struct.pack(*args)
+        
+        return args
 
     def unpack(self, buff):
         """unpack(buff)
@@ -1191,6 +1212,14 @@ class IMPO(MQOpts):
     default values may be overridden by the optional keyword arguments
     'kw'."""
     def __init__(self, **kw):
+        MQCHARV_DEFAULT = [
+                ['VSPtr', 0, 'P'],
+                ['VSOffset', py23long(0), MQLONG_TYPE],
+                ['VSBufSize', py23long(0), MQLONG_TYPE],
+                ['VSLength', py23long(0), MQLONG_TYPE],
+                ['VSCCSID', py23long(-3), MQLONG_TYPE]
+        ]
+
         opts = [['StrucId', CMQC.MQIMPO_STRUC_ID, '4s'],
                 ['Version', CMQC.MQIMPO_VERSION_1, MQLONG_TYPE],
                 ['Options', CMQC.MQIMPO_INQ_FIRST, MQLONG_TYPE],
@@ -1199,16 +1228,8 @@ class IMPO(MQOpts):
                 ['ReturnedEncoding', CMQC.MQENC_NATIVE, MQLONG_TYPE],
                 ['ReturnedCCSID', py23long(0), MQLONG_TYPE],
                 ['Reserved1', py23long(0), MQLONG_TYPE],
-
-                # ReturnedName
-                ['ReturnedNameVSPtr', 0, 'P'],
-                ['ReturnedNameVSOffset', py23long(0), MQLONG_TYPE],
-                ['ReturnedNameVSBufSize', py23long(0), MQLONG_TYPE],
-                ['ReturnedNameVSLength', py23long(0), MQLONG_TYPE],
-                ['ReturnedNameVSCCSID', py23long(0), MQLONG_TYPE],
-
+                ['ReturnedName', MQCHARV_DEFAULT, 'list'],
                 ['TypeString', b'', '8s']]
-
         super(IMPO, self).__init__(tuple(opts), **kw)
 
 
@@ -2339,7 +2360,7 @@ class MessageHandle(object):
             return self.set(name, value)
 
         def get(self, name, default=None, max_value_length=None,
-                impo_options=CMQC.MQIMPO_INQ_FIRST, pd=CMQC.MQPD_NONE,
+                impo=None, pd=None,
                 property_type=CMQC.MQTYPE_AS_SET):
             """ Returns the value of message property 'name'. 'default' is the
             value to return if the property is missing. 'max_value_length'
@@ -2376,7 +2397,7 @@ class MessageHandle(object):
             passing in MQPD and MQSMPO structures.
             """
 
-            #name = py3str2bytes(name)  # Python 3 strings to be converted to bytes
+            name = py3str2bytes(name)  # Python 3 strings to be converted to bytes
             #check_not_py3str(value)  # Python 3 only bytes allowed
 
             pd = pd if pd else PD()
