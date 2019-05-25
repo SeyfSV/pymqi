@@ -2353,8 +2353,12 @@ class MessageHandle(object):
             if not max_value_length:
                 max_value_length = MessageHandle.default_value_length
 
+            pd = pd if pd else PD()
+            impo = impo if impo else IMPO()
+
+
             value, dataLength, comp_code, comp_reason  = pymqe.MQINQMP(self.conn_handle,
-                                                          self.msg_handle, impo_options, name, impo_options,
+                                                          self.msg_handle, impo.pack(), name, pd.pack(),
                                                           property_type, max_value_length)
 
             if comp_code != CMQC.MQCC_OK:
@@ -2372,7 +2376,7 @@ class MessageHandle(object):
             passing in MQPD and MQSMPO structures.
             """
 
-            name = py3str2bytes(name)  # Python 3 strings to be converted to bytes
+            #name = py3str2bytes(name)  # Python 3 strings to be converted to bytes
             #check_not_py3str(value)  # Python 3 only bytes allowed
 
             pd = pd if pd else PD()
@@ -2389,7 +2393,7 @@ class MessageHandle(object):
         self.conn_handle = qmgr.get_handle() if qmgr else CMQC.MQHO_NONE
         cmho = cmho if cmho else CMHO()
 
-        comp_code, comp_reason, self.msg_handle = pymqe.MQCRTMH(self.conn_handle,
+        self.msg_handle, comp_code, comp_reason = pymqe.MQCRTMH(self.conn_handle,
                                                                 cmho.pack())
 
         if comp_code != CMQC.MQCC_OK:

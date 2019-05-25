@@ -11,19 +11,23 @@ import pymqi
 class TestMP(unittest.TestCase):
     def setUp(self):
 
-        self.msg_prop_name = utils.py3str2bytes("test_name")
+#        self.msg_prop_name = utils.py3str2bytes("test_name")
+        self.msg_prop_name = b"test_name"
+
         self.msg_prop_value_str = "test_valuetest_valuetest_valuetest_valuetest_value"
         self.msg_prop_value_bytes = b"test_valuetest_valuetest_valuetest_valuetest_value"
         self.msg_prop_value_bool = True
-        self.msg_prop_value_int8 = -3
-        self.msg_prop_value_int16 = -4
-        self.msg_prop_value_int32 = -5
-        self.msg_prop_value_int64 = -6
+        self.msg_prop_value_int8 = -127
+        self.msg_prop_value_int16 = -32768
+        self.msg_prop_value_int32 = -2147483647
+        self.msg_prop_value_int64 = -9223372036854775808
+        self.msg_prop_value_float32 = 1.1754943508222875e-38
+        self.msg_prop_value_float64 = 2.2250738585072014e-308
 
 
 
         # max length of queue names is 48 characters
-        self.queue_name = "{prefix}.MSG.PROP.QUEUE".format(prefix=config.MQ.QUEUE.PREFIX)
+        self.queue_name = "{prefix}MSG.PROP.QUEUE".format(prefix=config.MQ.QUEUE.PREFIX)
         self.queue_manager = config.MQ.QM.NAME
         self.channel = config.MQ.QM.CHANNEL
         self.host = config.MQ.QM.HOST
@@ -185,31 +189,24 @@ class TestMP(unittest.TestCase):
 
     def test_message_properties_bool(self):
         messageHandle_get = self.workWithProp(self.msg_prop_value_bool, pymqi.CMQC.MQTYPE_BOOLEAN)
-
-        #value = messageHandle_get.properties.get(self.msg_prop_name)
         value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_BOOLEAN)
 
         self.assertEqual(self.msg_prop_value_bool, value)
 
-
-    def test_message_properties_1int8(self):
+    def test_message_properties_int8(self):
         messageHandle_get = self.workWithProp(self.msg_prop_value_int8, pymqi.CMQC.MQTYPE_INT8)
-
-        #value = messageHandle_get.properties.get(self.msg_prop_name)
         value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_INT8)
 
         self.assertEqual(self.msg_prop_value_int8, value)
 
     def test_message_properties_int16(self):
         messageHandle_get = self.workWithProp(self.msg_prop_value_int16, pymqi.CMQC.MQTYPE_INT16)
-
         value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_INT16)
 
         self.assertEqual(self.msg_prop_value_int16, value)
 
-    def test_message_properties_1int32(self):
+    def test_message_properties_int32(self):
         messageHandle_get = self.workWithProp(self.msg_prop_value_int32, pymqi.CMQC.MQTYPE_INT32)
-
         value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_INT32)
 
         self.assertEqual(self.msg_prop_value_int32, value)
@@ -217,10 +214,21 @@ class TestMP(unittest.TestCase):
 
     def test_message_properties_int64(self):
         messageHandle_get = self.workWithProp(self.msg_prop_value_int64, pymqi.CMQC.MQTYPE_INT64)
-
         value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_INT64)
 
         self.assertEqual(self.msg_prop_value_int64, value)
+
+    def test_message_properties_float32(self):
+        messageHandle_get = self.workWithProp(self.msg_prop_value_float32, pymqi.CMQC.MQTYPE_FLOAT32)
+        value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_FLOAT32)
+
+        self.assertEqual(self.msg_prop_value_float32, value)
+
+    def test_message_properties_float64(self):
+        messageHandle_get = self.workWithProp(self.msg_prop_value_float64, pymqi.CMQC.MQTYPE_FLOAT64)
+        value = self.getPropertyValue(messageHandle_get, pymqi.CMQC.MQTYPE_FLOAT64)
+
+        self.assertEqual(self.msg_prop_value_float64, value)
 
 if __name__ == "__main__":
     unittest.main()
